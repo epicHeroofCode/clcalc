@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CluCalc - Advanced Scientific Calculator</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Segoe UI, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: #f3f2f1;
+        padding:10px;
+    }
+    .auth-box, .verification-box, .calculator {
+        width: 100%;
+        max-width: 400px;
+        background: #fff;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        box-sizing: border-box;
+    }
+    .auth-box h2, .verification-box h2 { margin:0 0 15px 0; color:#2b579a; }
+    .auth-input, .code-input {
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .auth-btn {
+        padding: 12px;
+        border: none;
+        background: #0078d4;
+        color: white;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .switch-btn {
+        background: transparent;
+        border: none;
+        color: #0078d4;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    .calculator { display: none; gap:10px; overflow-x: auto; }
+    .display {
+        background:#fafafa;
+        padding:20px;
+        font-size:2rem;
+        text-align:right;
+        border-radius:15px;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.08);
+        word-wrap: break-word;
+        min-height: 60px;
+    }
+    .buttons {
+        display:grid;
+        grid-template-columns:repeat(auto-fit, minmax(60px, 1fr));
+        gap:10px;
+    }
+    button.calc-btn {
+        height:60px;
+        border-radius:15px;
+        border:none;
+        font-size:1rem;
+        cursor:pointer;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    .op { background:#e8ebff; color:#3F51B5; font-weight:bold; }
+    .equal { background:#0078d4; color:white; grid-column: span 5; }
+    .func { background:#f0f0f0; }
+</style>
+</head>
+<body>
+
+<div id="auth" class="auth-box">
+    <h2>Sign In</h2>
+    <input id="auth-email" class="auth-input" type="email" placeholder="Email" />
+    <input id="auth-pass" class="auth-input" type="password" placeholder="Password" />
+    <button class="auth-btn" onclick="signup()" id="auth-btn">Sign Up</button>
+    <button class="switch-btn" onclick="toggleAuth()" id="switch-btn">Already have an account? Sign In</button>
+</div>
+
+<div id="verify" class="verification-box" style="display:none;">
+    <h2>Enter Verification Code</h2>
+    <p>We sent a code to your email.</p>
+    <input id="code-input" class="code-input" type="text" placeholder="Enter code" />
+    <button class="auth-btn" onclick="verifyCode()">Verify</button>
+</div>
+
+<div id="calculator" class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+        <button class="calc-btn func" onclick="insert('Math.sin(')">sin</button>
+        <button class="calc-btn func" onclick="insert('Math.cos(')">cos</button>
+        <button class="calc-btn func" onclick="insert('Math.tan(')">tan</button>
+        <button class="calc-btn func" onclick="insert('Math.log(')">log</button>
+        <button class="calc-btn func" onclick="insert('Math.sqrt(')">√</button>
+        <button class="calc-btn func" onclick="insert('Math.pow(')">xⁿ</button>
+        <button class="calc-btn func" onclick="insert('Math.PI')">π</button>
+        <button class="calc-btn func" onclick="insert('Math.E')">e</button>
+        <button class="calc-btn func" onclick="insert('(')">(</button>
+        <button class="calc-btn func" onclick="insert(')')">)</button>
+        <button class="calc-btn" onclick="insert('7')">7</button>
+        <button class="calc-btn" onclick="insert('8')">8</button>
+        <button class="calc-btn" onclick="insert('9')">9</button>
+        <button class="calc-btn op" onclick="insert('/')">÷</button>
+        <button class="calc-btn func" onclick="insert('Math.abs(')">abs</button>
+        <button class="calc-btn" onclick="insert('4')">4</button>
+        <button class="calc-btn" onclick="insert('5')">5</button>
+        <button class="calc-btn" onclick="insert('6')">6</button>
+        <button class="calc-btn op" onclick="insert('*')">×</button>
+        <button class="calc-btn func" onclick="insert('Math.round(')">round</button>
+        <button class="calc-btn" onclick="insert('1')">1</button>
+        <button class="calc-btn" onclick="insert('2')">2</button>
+        <button class="calc-btn" onclick="insert('3')">3</button>
+        <button class="calc-btn op" onclick="insert('-')">−</button>
+        <button class="calc-btn func" onclick="insert('Math.floor(')">floor</button>
+        <button class="calc-btn" onclick="insert('0')">0</button>
+        <button class="calc-btn" onclick="insert('.')">.</button>
+        <button class="calc-btn" onclick="clearDisplay()">AC</button>
+        <button class="calc-btn op" onclick="insert('+')">+</button>
+        <button class="calc-btn func" onclick="insert('%')">mod</button>
+        <button class="calc-btn equal" onclick="calculate()">=</button>
+    </div>
+</div>
+
+<script>
+let shiftAuth = 'signup';
+let simulatedCode = '';
+
+window.onload = function(){
+    if(localStorage.getItem('loggedIn')==='true'){
+        document.getElementById('auth').style.display='none';
+        document.getElementById('calculator').style.display='flex';
+    }
+}
+
+function toggleAuth(){
+    if(shiftAuth==='signup'){
+        shiftAuth='signin';
+        document.getElementById('auth-btn').innerText='Sign In';
+        document.getElementById('switch-btn').innerText='Don\'t have an account? Sign Up';
+    }else{
+        shiftAuth='signup';
+        document.getElementById('auth-btn').innerText='Sign Up';
+        document.getElementById('switch-btn').innerText='Already have an account? Sign In';
+    }
+}
+
+function signup(){
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-pass').value;
+    if(!email||!pass){ alert('Fill all fields'); return; }
+
+    if(shiftAuth==='signup'){
+        localStorage.setItem('sim_email',email);
+        localStorage.setItem('sim_pass',pass);
+        simulatedCode = Math.floor(100000+Math.random()*900000).toString();
+        alert('Verification code sent to '+email+' (simulated): '+simulatedCode);
+        document.getElementById('auth').style.display='none';
+        document.getElementById('verify').style.display='flex';
+    } else {
+        const savedEmail = localStorage.getItem('sim_email');
+        const savedPass = localStorage.getItem('sim_pass');
+        if(email===savedEmail && pass===savedPass){
+            document.getElementById('auth').style.display='none';
+            document.getElementById('calculator').style.display='flex';
+            localStorage.setItem('loggedIn','true');
+        } else alert('Incorrect email or password');
+    }
+}
+
+function verifyCode(){
+    const inputCode = document.getElementById('code-input').value;
+    if(inputCode===simulatedCode){
+        document.getElementById('verify').style.display='none';
+        document.getElementById('calculator').style.display='flex';
+        localStorage.setItem('loggedIn','true');
+    } else alert('Incorrect code');
+}
+
+let display = document.getElementById('display');
+function insert(val){
+    if(display.innerText==='0') display.innerText='';
+    display.innerText+=val;
+}
+function clearDisplay(){ display.innerText='0'; }
+function calculate(){ try{ display.innerText=eval(display.innerText); }catch{ display.innerText='Error'; }
+}
+</script>
+
+</body>
+</html>
